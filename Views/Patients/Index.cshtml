@@ -1,0 +1,86 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Пациенты</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Пациенты</h1>
+    <button onclick="addPatient()">Добавить пациента</button>
+    <table id="table" border="1" style="margin-top:10px;">
+        <tr>
+            <th>Фамилия</th>
+            <th>Имя</th>
+            <th>Отчество</th>
+            <th>Дата рождения</th>
+            <th>Телефон</th>
+            <th>Действия</th>
+        </tr>
+    </table>
+
+    <script>
+        function load() {
+            $.get('/Patients/GetPatients', function(data) {
+                let html = '<tr><th>Фамилия</th><th>Имя</th><th>Отчество</th><th>Дата рождения</th><th>Телефон</th><th>Действия</th></tr>';
+                data.forEach(p => {
+                    html += `<tr>
+                        <td>${p.lastName}</td>
+                        <td>${p.firstName}</td>
+                        <td>${p.middleName ?? ''}</td>
+                        <td>${p.birthDate ? new Date(p.birthDate).toLocaleDateString() : ''}</td>
+                        <td>${p.phone}</td>
+                        <td>
+                            <button onclick="addVisit('${p.id}')">Добавить посещение</button>
+                            <button onclick="exportXml('${p.id}')">В XML</button>
+                        </td>
+                    </tr>`;
+                });
+                $('#table').html(html);
+            });
+        }
+
+        function addPatient() {
+            let lastName = prompt("Фамилия:");
+            let firstName = prompt("Имя:");
+            let middleName = prompt("Отчество:");
+            let birthDate = prompt("Дата рождения (YYYY-MM-DD):");
+            let phone = prompt("Телефон:");
+
+            if (!lastName || !firstName) return;
+
+            $.post('/Patients/Create', {
+                LastName: lastName,
+                FirstName: firstName,
+                MiddleName: middleName,
+                BirthDate: birthDate,
+                Phone: phone
+            }, load);
+        }
+
+        function addVisit(patientId) {
+            let visitDate = prompt("Дата посещения (YYYY-MM-DD):");
+            let diagnosis = prompt("Код диагноза:");
+            if(!visitDate || !diagnosis) return;
+
+            $.post('/Visits/Create', {
+                PatientId: patientId,
+                VisitDate: visitDate,
+                DiagnosisCode: diagnosis
+            }, function(){ alert('Посещение добавлено'); });
+        }
+
+        function exportXml(patientId){
+            window.open('/Patients/ExportXml?id=' + patientId, '_blank');
+        }
+
+        $(document).ready(function() {
+            load();
+        });
+    </script>
+</body>
+</html>
